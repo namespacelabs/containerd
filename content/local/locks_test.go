@@ -24,11 +24,11 @@ import (
 )
 
 func TestTryLock(t *testing.T) {
-	err := tryLock("testref")
+	err := tryLock("root", "testref")
 	assert.NoError(t, err)
-	defer unlock("testref")
+	defer unlock("root", "testref")
 
-	err = tryLock("testref")
+	err = tryLock("root", "testref")
 	require.NotNil(t, err)
 	assert.Contains(t, err.Error(), "ref testref locked for ")
 }

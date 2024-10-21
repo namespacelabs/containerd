@@ -30,17 +30,23 @@ type lock struct {
 	since time.Time
 }
 
+type key struct {
+	// Scope ref locking to root directories.
+	// E.g. In buildkit, each worker has its own content store.
+	root, ref string
+}
+
 var (
 	// locks lets us lock in process
-	locks   = make(map[string]*lock)
+	locks   = make(map[key]*lock)
 	locksMu sync.Mutex
 )
 
-func tryLock(ref string) error {
+func tryLock(root, ref string) error {
 	locksMu.Lock()
 	defer locksMu.Unlock()
 
-	if v, ok := locks[ref]; ok {
+	if v, ok := locks[key{root: root, ref: ref}]; ok {
 		// Returning the duration may help developers distinguish dead locks (long duration) from
 		// lock contentions (short duration).
 		now := time.Now()
@@ -50,13 +56,13 @@ func tryLock(ref string) error {
 		)
 	}
 
-	locks[ref] = &lock{time.Now()}
+	locks[key{root: root, ref: ref}] = &lock{time.Now()}
 	return nil
 }
 
-func unlock(ref string) {
+func unlock(root, ref string) {
 	locksMu.Lock()
 	defer locksMu.Unlock()
 
-	delete(locks, ref)
+	delete(locks, key{root: root, ref: ref})
 }
