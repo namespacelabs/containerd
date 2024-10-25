@@ -18,7 +18,6 @@ package local
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/containerd/containerd/errdefs"
@@ -30,23 +29,11 @@ type lock struct {
 	since time.Time
 }
 
-type key struct {
-	// Scope ref locking to root directories.
-	// E.g. In buildkit, each worker has its own content store.
-	root, ref string
-}
+func (s *store) tryLock(ref string) error {
+	s.locksMu.Lock()
+	defer s.locksMu.Unlock()
 
-var (
-	// locks lets us lock in process
-	locks   = make(map[key]*lock)
-	locksMu sync.Mutex
-)
-
-func tryLock(root, ref string) error {
-	locksMu.Lock()
-	defer locksMu.Unlock()
-
-	if v, ok := locks[key{root: root, ref: ref}]; ok {
+	if v, ok := s.locks[ref]; ok {
 		// Returning the duration may help developers distinguish dead locks (long duration) from
 		// lock contentions (short duration).
 		now := time.Now()
@@ -56,13 +43,13 @@ func tryLock(root, ref string) error {
 		)
 	}
 
-	locks[key{root: root, ref: ref}] = &lock{time.Now()}
+	s.locks[ref] = &lock{time.Now()}
 	return nil
 }
 
-func unlock(root, ref string) {
-	locksMu.Lock()
-	defer locksMu.Unlock()
+func (s *store) unlock(ref string) {
+	s.locksMu.Lock()
+	defer s.locksMu.Unlock()
 
-	delete(locks, key{root: root, ref: ref})
+	delete(s.locks, ref)
 }

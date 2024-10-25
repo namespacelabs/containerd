@@ -67,6 +67,9 @@ type LabelStore interface {
 type store struct {
 	root string
 	ls   LabelStore
+
+	locksMu sync.Mutex
+	locks   map[string]*lock
 }
 
 // NewStore returns a local content store
@@ -85,8 +88,9 @@ func NewLabeledStore(root string, ls LabelStore) (content.Store, error) {
 	}
 
 	return &store{
-		root: root,
-		ls:   ls,
+		root:  root,
+		ls:    ls,
+		locks: map[string]*lock{},
 	}, nil
 }
 
@@ -464,7 +468,7 @@ func (s *store) Writer(ctx context.Context, opts ...content.WriterOpt) (content.
 	}
 	var lockErr error
 	for count := uint64(0); count < 10; count++ {
-		if err := tryLock(s.root, wOpts.Ref); err != nil {
+		if err := s.tryLock(wOpts.Ref); err != nil {
 			if !errdefs.IsUnavailable(err) {
 				return nil, err
 			}
@@ -483,7 +487,7 @@ func (s *store) Writer(ctx context.Context, opts ...content.WriterOpt) (content.
 
 	w, err := s.writer(ctx, wOpts.Ref, wOpts.Desc.Size, wOpts.Desc.Digest)
 	if err != nil {
-		unlock(s.root, wOpts.Ref)
+		s.unlock(wOpts.Ref)
 		return nil, err
 	}
 
