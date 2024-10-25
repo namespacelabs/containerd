@@ -18,6 +18,9 @@ package local
 
 import (
 	"fmt"
+	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/containerd/containerd/errdefs"
@@ -32,6 +35,13 @@ type lock struct {
 func (s *store) tryLock(ref string) error {
 	s.locksMu.Lock()
 	defer s.locksMu.Unlock()
+
+	if dontLock := os.Getenv("NAMESPACE_DONT_LOCK_REFS"); dontLock != "" {
+		refs := strings.Split(dontLock, ",")
+		if slices.Contains(refs, ref) {
+			return nil
+		}
+	}
 
 	if v, ok := s.locks[ref]; ok {
 		// Returning the duration may help developers distinguish dead locks (long duration) from
