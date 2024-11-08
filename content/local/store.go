@@ -468,7 +468,7 @@ func (s *store) Writer(ctx context.Context, opts ...content.WriterOpt) (content.
 	}
 	var lockErr error
 	for count := uint64(0); count < 10; count++ {
-		if err := s.tryLock(wOpts.Ref); err != nil {
+		if err := s.tryLock(ctx, wOpts.Ref); err != nil {
 			if !errdefs.IsUnavailable(err) {
 				return nil, err
 			}

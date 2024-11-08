@@ -17,6 +17,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -24,6 +25,7 @@ import (
 	"time"
 
 	"github.com/containerd/containerd/errdefs"
+	"github.com/containerd/log"
 )
 
 // Handles locking references
@@ -32,19 +34,27 @@ type lock struct {
 	since time.Time
 }
 
-func (s *store) tryLock(ref string) error {
+func (s *store) tryLock(ctx context.Context, ref string) error {
 	s.locksMu.Lock()
 	defer s.locksMu.Unlock()
 
-	if true {
-		panic(os.Getenv("NAMESPACE_DONT_LOCK_REFS"))
-	}
+	log.G(ctx).WithField("ref", ref).
+		WithField("NAMESPACE_DONT_LOCK_REFS", os.Getenv("NAMESPACE_DONT_LOCK_REFS")).
+		Infof("niklas test")
 
 	if dontLock := os.Getenv("NAMESPACE_DONT_LOCK_REFS"); dontLock != "" {
 		refs := strings.Split(dontLock, ",")
 		if slices.Contains(refs, ref) {
 			return nil
 		}
+	}
+
+	if strings.Contains(ref, "sha256:bd9ddc54bea929a22b334e73e026d4136e5b73f5cc29942896c72e4ece69b13d") {
+		// layer-sha256:bd9ddc54bea929a22b334e73e026d4136e5b73f5cc29942896c72e4ece69b13d is problematic but should be excluded above
+
+		log.G(ctx).WithField("ref", ref).
+			WithField("NAMESPACE_DONT_LOCK_REFS", os.Getenv("NAMESPACE_DONT_LOCK_REFS")).
+			Infof("should not lock this ref")
 	}
 
 	if v, ok := s.locks[ref]; ok {
