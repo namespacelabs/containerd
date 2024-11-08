@@ -58,7 +58,7 @@ func (s *store) tryLock(ref string) error {
 		// lock contentions (short duration).
 		now := time.Now()
 		return fmt.Errorf(
-			"ref %s locked for %s (since %s): %w", ref, now.Sub(v.since), v.since,
+			"ref %q locked for %s (since %s): %w", ref, now.Sub(v.since), v.since,
 			errdefs.ErrUnavailable,
 		)
 	}
