@@ -38,10 +38,6 @@ func (s *store) tryLock(ctx context.Context, ref string) error {
 	s.locksMu.Lock()
 	defer s.locksMu.Unlock()
 
-	log.G(ctx).WithField("ref", ref).
-		WithField("NAMESPACE_DONT_LOCK_REFS", os.Getenv("NAMESPACE_DONT_LOCK_REFS")).
-		Infof("niklas test")
-
 	if dontLock := os.Getenv("NAMESPACE_DONT_LOCK_REFS"); dontLock != "" {
 		refs := strings.Split(dontLock, ",")
 		if slices.Contains(refs, ref) {
