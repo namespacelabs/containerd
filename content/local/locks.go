@@ -36,24 +36,18 @@ func (s *store) tryLock(ref string) error {
 	s.locksMu.Lock()
 	defer s.locksMu.Unlock()
 
+	if true {
+		panic(os.Getenv("NAMESPACE_DONT_LOCK_REFS"))
+	}
+
 	if dontLock := os.Getenv("NAMESPACE_DONT_LOCK_REFS"); dontLock != "" {
 		refs := strings.Split(dontLock, ",")
 		if slices.Contains(refs, ref) {
 			return nil
 		}
-
-		if !slices.Contains(refs, "layer-sha256:bd9ddc54bea929a22b334e73e026d4136e5b73f5cc29942896c72e4ece69b13d") {
-			panic("niklas: layer not excluded?")
-		}
-	} else {
-		panic("niklas: NAMESPACE_DONT_LOCK_REFS not set?")
 	}
 
 	if v, ok := s.locks[ref]; ok {
-		if strings.Contains(ref, "bd9ddc54bea") {
-			panic(fmt.Sprintf("niklas: %q got here", ref))
-		}
-
 		// Returning the duration may help developers distinguish dead locks (long duration) from
 		// lock contentions (short duration).
 		now := time.Now()
